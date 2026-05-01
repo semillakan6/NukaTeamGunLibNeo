@@ -176,6 +176,27 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+/** Fails the build if ntgl accidentally ships CGS classes — causes JPMS ResolutionException when both ntgl and cgs are loaded (split package). */
+def jarTaskProvider = tasks.named('jar', Jar)
+tasks.register('verifyNtglJarHasNoCgsPackage') {
+    dependsOn jarTaskProvider
+    def archiveFile = jarTaskProvider.flatMap { it.archiveFile }
+    inputs.file(archiveFile)
+    doLast {
+        File jarFile = archiveFile.get().asFile
+        new java.util.zip.ZipFile(jarFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                if (!entry.directory && entry.name.startsWith('com/nukateam/cgs/')) {
+                    throw new GradleException(
+                            "Jar ${jarFile.name} contains forbidden split-package entry: ${entry.name}. " +
+                                    "This ntgl artifact must only include com.nukateam.ntgl — rebuild from a clean tree without merging Create Gunsmithing output.")
+                }
+            }
+        }
+    }
+}
+tasks.named('jar').configure { finalizedBy 'verifyNtglJarHasNoCgsPackage' }
+
 /** Log4j rolling file appenders expect logs/latest.log and logs/debug.log to exist before rollover; FML needs writable config. */
 tasks.register('prepareRuns') {
     group = 'minecraft'

@@ -37,6 +37,5 @@
   "injectors": {
     "defaultRequire": 1
   },
-  "refmap": "ntgl.mixin-refmap.json",
   "minVersion": "0.8"
 }
