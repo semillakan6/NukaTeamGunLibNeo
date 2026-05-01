@@ -90,6 +90,13 @@ repositories {
         name = "SpongePowered"
         url = "https://repo.spongepowered.org/maven"
     }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
 }
 
 dependencies {
@@ -106,7 +113,8 @@ dependencies {
 
     implementation "curse.maven:kotlin-for-forge-351264:6994056"
     implementation "curse.maven:fzzy-config-1005914:7085021"
-    implementation 'einstein:subtleeffects-neoforge:1.21.1-1.13.1'
+    // Version id from Modrinth (Subtle Effects 1.21.1-1.13.1); resolves for downstream mods (e.g. CGS runData)
+    implementation "maven.modrinth:subtle-effects:1cLpeR9D"
 
     implementation 'curse.maven:controllable-317269:6850105'
     implementation "dev.kosmx.player-anim:player-animation-lib-forge:2.0.1+1.21.1"

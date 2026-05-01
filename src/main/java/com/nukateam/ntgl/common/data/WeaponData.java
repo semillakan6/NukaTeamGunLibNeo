@@ -1,11 +1,14 @@
 package com.nukateam.ntgl.common.data;
 
 import com.nukateam.ntgl.common.data.holders.WeaponMode;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 import javax.annotation.Nullable;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 public class WeaponData{
     @Nullable public final ItemStack weapon;
@@ -34,7 +37,23 @@ public class WeaponData{
     }
 
     public RegistryAccess registryAccess() {
-        return wielder.level().registryAccess();
+        if (wielder != null) {
+            return wielder.level().registryAccess();
+        }
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
+            return server.registryAccess();
+        }
+        if (FMLEnvironment.dist.isClient()) {
+            var mc = Minecraft.getInstance();
+            if (mc.level != null) {
+                return mc.level.registryAccess();
+            }
+            if (mc.getConnection() != null) {
+                return mc.getConnection().registryAccess();
+            }
+        }
+        return RegistryAccess.EMPTY;
     }
 
 }
