@@ -27,7 +27,7 @@ public class MouseHandlerMixin {
     @Shadow private double accumulatedDX;
     @Shadow private double accumulatedDY;
 
-    @Inject(method = "turnPlayer()V", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "turnPlayer(D)V", at = @At("HEAD"), cancellable = true)
     private void onTurnPlayer(CallbackInfo ci) {
         if (ActionWheelManager.getInstance().isWheelActive()) {
             this.accumulatedDX = 0;
@@ -36,7 +36,7 @@ public class MouseHandlerMixin {
         }
     }
 
-    @ModifyVariable(method = "turnPlayer()V", at = @At(value = "STORE", opcode = Opcodes.DSTORE), ordinal = 2)
+    @ModifyVariable(method = "turnPlayer(D)V", at = @At(value = "STORE", opcode = Opcodes.DSTORE), ordinal = 2)
     private double sensitivity(double original) {
         var additionalAdsSensitivity = 1.0F;
         var mc = Minecraft.getInstance();
