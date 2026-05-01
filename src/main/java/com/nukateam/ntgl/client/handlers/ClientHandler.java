@@ -4,6 +4,7 @@ import com.nukateam.ntgl.client.registry.*;
 import com.nukateam.ntgl.client.util.handler.*;
 import com.nukateam.ntgl.client.input.GunButtonBindings;
 import com.nukateam.ntgl.client.render.screen.AttachmentScreen;
+import com.nukateam.ntgl.client.render.screen.WorkbenchScreen;
 import com.nukateam.ntgl.common.foundation.init.ModContainers;
 import com.nukateam.ntgl.Ntgl;
 import net.minecraft.world.InteractionHand;
@@ -63,7 +64,7 @@ public class ClientHandler {
 
     @SubscribeEvent
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
-//        event.register(ModContainers.WORKBENCH.get(), WorkbenchScreen::new);
+        event.register(ModContainers.WORKBENCH.get(), WorkbenchScreen::new);
         event.register(ModContainers.ATTACHMENTS.get(), AttachmentScreen::new);
 
     }

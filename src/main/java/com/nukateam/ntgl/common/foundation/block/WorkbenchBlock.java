@@ -11,6 +11,7 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import com.nukateam.ntgl.common.foundation.blockentity.WorkbenchBlockEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -29,7 +30,7 @@ import java.util.Map;
 /**
  * Author: MrCrayfish
  */
-public class WorkbenchBlock extends RotatedObjectBlock{
+public class WorkbenchBlock extends RotatedObjectBlock implements EntityBlock {
     private final Map<BlockState, VoxelShape> SHAPES = new HashMap<>();
 
     public WorkbenchBlock(Block.Properties properties) {
@@ -74,11 +75,11 @@ public class WorkbenchBlock extends RotatedObjectBlock{
         return InteractionResult.SUCCESS;
     }
 
-//    @Nullable
-//    @Override
-//    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-//        return new WorkbenchBlockEntity(pos, state);
-//    }
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new WorkbenchBlockEntity(pos, state);
+    }
 
     @Override
     protected MapCodec<? extends WorkbenchBlock> codec() {

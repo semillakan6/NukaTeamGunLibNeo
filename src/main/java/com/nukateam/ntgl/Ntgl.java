@@ -13,6 +13,7 @@ import com.nukateam.ntgl.common.data.holders.AnimationType;
 import com.nukateam.ntgl.common.util.managers.BoundingBoxManager;
 import com.nukateam.ntgl.common.datagen.*;
 import com.nukateam.ntgl.common.registry.ProjectileRegistry;
+import com.nukateam.ntgl.common.foundation.crafting.ModRecipeType;
 import com.nukateam.ntgl.common.foundation.init.*;
 import com.nukateam.ntgl.common.network.PacketHandler;
 import com.nukateam.ntgl.modules.gunpack.GunPackModule;
@@ -58,6 +59,9 @@ public class Ntgl {
         container.registerConfig(ModConfig.Type.SERVER, Config.serverSpec);
         //ModBlocks.REGISTER.register(bus);
         ModContainers.REGISTER.register(MOD_EVENT_BUS);
+        ModTileEntities.REGISTER.register(MOD_EVENT_BUS);
+        ModRecipeSerializers.REGISTER.register(MOD_EVENT_BUS);
+        ModRecipeType.REGISTER.register(MOD_EVENT_BUS);
         ModEffects.REGISTER.register(MOD_EVENT_BUS);
         Projectiles.REGISTER.register(MOD_EVENT_BUS);
         if(Ntgl.isDebugging()) {

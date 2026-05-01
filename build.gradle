@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.0.192'
+    id 'net.neoforged.gradle.userdev' version '7.1.26'
 }
 
 tasks.named('wrapper', Wrapper).configure {
@@ -166,6 +166,39 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+/** Log4j rolling file appenders expect logs/latest.log and logs/debug.log to exist before rollover; FML needs writable config. */
+tasks.register('prepareRuns') {
+    group = 'minecraft'
+    description = 'Creates run directories and placeholder log files to avoid Log4j/FML startup failures on Windows.'
+    doLast {
+        ['client', 'server'].each { runName ->
+            def base = file("runs/${runName}")
+            ['logs', 'downloads', 'crash-reports', 'config', 'mods', 'defaultconfigs'].each { sub ->
+                mkdir(new File(base, sub))
+            }
+            def logsDir = new File(base, 'logs')
+            logsDir.mkdirs()
+            ['latest.log', 'debug.log'].each { logName ->
+                def f = new File(logsDir, logName)
+                if (!f.exists()) {
+                    f.createNewFile()
+                }
+            }
+            def fml = new File(base, 'config/fml.toml')
+            if (fml.exists() && !fml.canWrite()) {
+                fml.setWritable(true)
+            }
+        }
+    }
+}
+
+['runClient', 'runServer'].each { taskName ->
+    def t = tasks.findByName(taskName)
+    if (t != null) {
+        t.dependsOn prepareRuns
+    }
 }
 
 idea {

@@ -38,15 +38,11 @@ public class C2SMessageCraft  {
     }
 
     public static void handle(C2SMessageCraft message, MessageContext supplier) {
-        supplier.execute(() ->
-        {
-            supplier.execute(() ->
-            {
-                supplier.getPlayer().ifPresent(player -> {
-//                    ServerPlayHandler.handleCraft((ServerPlayer)player, message.id, message.pos);
-                });
-            });
-        });
+        supplier.execute(() -> supplier.getPlayer().ifPresent(player -> {
+            if (player instanceof ServerPlayer sp) {
+                ServerPlayHandler.handleCraft(sp, message.id, message.pos);
+            }
+        }));
         supplier.setHandled(true);
     }
 }

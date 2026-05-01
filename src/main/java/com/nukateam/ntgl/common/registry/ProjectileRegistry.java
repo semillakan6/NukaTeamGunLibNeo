@@ -10,6 +10,7 @@ import com.nukateam.ntgl.common.util.interfaces.IProjectileFactory;
 import com.nukateam.ntgl.common.util.interfaces.IThrowableProjectileFactory;
 import org.jetbrains.annotations.NotNull;
 
+/** Maps projectile kinds to entity factories. Per-projectile JSON is covered by weapon/ammo datapack sync, not a separate network projectile registry. */
 public class ProjectileRegistry {
     private static final IProjectileFactory DEFAULT = (level, gunData) ->
             new ProjectileEntity(Projectiles.PROJECTILE.get(), level, gunData);

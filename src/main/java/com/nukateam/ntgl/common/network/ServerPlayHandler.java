@@ -21,6 +21,10 @@ import com.nukateam.ntgl.common.util.util.*;
 import com.nukateam.ntgl.common.event.GunFireEvent;
 import com.nukateam.ntgl.common.event.GunReloadEvent;
 import com.nukateam.ntgl.common.foundation.container.AttachmentContainer;
+import com.nukateam.ntgl.common.foundation.container.WorkbenchContainer;
+import com.nukateam.ntgl.common.foundation.crafting.WorkbenchRecipes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.Containers;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -197,6 +201,22 @@ public class ServerPlayHandler {
         projectileEntity.setWeapon(data.weapon);
         world.addFreshEntity(projectileEntity);
         projectileEntity.tick();
+    }
+
+    public static void handleCraft(ServerPlayer player, ResourceLocation id, BlockPos pos) {
+        Level world = player.level();
+        if (player.containerMenu instanceof WorkbenchContainer workbench && workbench.getPos().equals(pos)) {
+            var recipe = WorkbenchRecipes.getRecipeById(world, id);
+            if (recipe == null || !recipe.hasMaterials(player)) {
+                return;
+            }
+            recipe.consumeMaterials(player);
+            Containers.dropItemStack(world,
+                    pos.getX() + 0.5,
+                    pos.getY() + 1.125,
+                    pos.getZ() + 0.5,
+                    recipe.getItem());
+        }
     }
 
     public static void handlePreFireSound(C2SMessagePreFireSound message, ServerPlayer player) {

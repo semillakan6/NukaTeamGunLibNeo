@@ -7,8 +7,13 @@ import com.nukateam.ntgl.Ntgl;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.*;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.BlockModelRotation;
+import net.minecraft.client.resources.model.Material;
+import net.minecraft.client.resources.model.ModelBaker;
+import net.minecraft.client.resources.model.ModelState;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,14 +21,19 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.RenderTypeGroup;
 import net.neoforged.neoforge.client.model.CompositeModel;
-import net.neoforged.neoforge.client.model.geometry.*;
-import net.minecraft.core.registries.Registries;
+import net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext;
+import net.neoforged.neoforge.client.model.geometry.IGeometryLoader;
+import net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry;
+import net.neoforged.neoforge.client.model.geometry.StandaloneGeometryBakingContext;
+import net.neoforged.neoforge.client.model.geometry.UnbakedGeometryHelper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.function.Function;
 
 public class GunIconModels implements IUnbakedGeometry<GunIconModels> {
+    private static final ResourceLocation BAKE_NAME = ResourceLocation.tryBuild(Ntgl.MOD_ID, "gun_icon");
+
     @Nonnull
     private final ItemStack stack;
 
@@ -35,49 +45,47 @@ public class GunIconModels implements IUnbakedGeometry<GunIconModels> {
         return new GunIconModels(stack);
     }
 
-
     @Override
     public BakedModel bake(IGeometryBakingContext context, ModelBaker baker,
                            Function<Material, TextureAtlasSprite> spriteGetter,
                            ModelState modelState, ItemOverrides overrides) {
-//        TextureAtlasSprite texture = spriteGetter.apply(
-//                new Material(InventoryMenu.BLOCK_ATLAS, getTexture())
-//        );
-        return null;
-    }
+        Material particleLocation = context.hasMaterial("particle")
+                ? context.getMaterial("particle")
+                : new Material(InventoryMenu.BLOCK_ATLAS, MissingTextureAtlasSprite.getLocation());
+        TextureAtlasSprite particleSprite = spriteGetter.apply(particleLocation);
 
-    //TODO port this
-//    @Override
-//    public BakedModel bake(IGeometryBakingContext context, ModelBaker modelBaker,
-//                           Function<Material, TextureAtlasSprite> function,
-//                           ModelState modelState, ItemOverrides itemOverrides, ResourceLocation resourceLocation)
-//    {
-//        var particleLocation = getMaterial(context, "particle");
-//        var particleSprite = particleLocation != null ? function.apply(particleLocation) : null;
-//
-//        var itemContext = StandaloneGeometryBakingContext.builder(context)
-//                .withGui3d(false).withUseBlockLight(false).build(resourceLocation);
-//
-//        var builder = CompositeModel.Baked.builder(itemContext, particleSprite,
-//                new GunIconModels.ItemOverrideHandler(itemOverrides, modelBaker, itemContext, this),
-//                context.getTransforms());
-//
-//        var skin = StackUtils.getVariant(stack);
-//        var texture = getTexture(resourceLocation.getNamespace(), getItemName(stack), skin);
-//        var baseMaterial = new Material(InventoryMenu.BLOCK_ATLAS, texture);
-//        var baseLocation = getMaterial(context, "base");
-//        var sprite = !stack.isEmpty() ?
-//                function.apply(baseMaterial) :
-//                function.apply(baseLocation);
-//
-//        var unbaked = UnbakedGeometryHelper.createUnbakedItemElements(0, sprite.contents());
-//        var quads = UnbakedGeometryHelper.bakeElements(unbaked, $ -> sprite, modelState, resourceLocation);
-//
-//        builder.addQuads(getLayerRenderTypes(), quads);
-//
-//        builder.setParticle(particleSprite);
-//        return builder.build();
-//    }
+        var itemContext = StandaloneGeometryBakingContext.builder(context)
+                .withGui3d(false)
+                .withUseBlockLight(false)
+                .build(BAKE_NAME);
+
+        var overrideHandler = new ItemOverrideHandler(overrides, baker, itemContext, this);
+
+        var builder = CompositeModel.Baked.builder(itemContext, particleSprite, overrideHandler, context.getTransforms());
+
+        String skin = StackUtils.getVariant(stack);
+        var itemKey = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        String namespace = itemKey != null ? itemKey.getNamespace() : Ntgl.MOD_ID;
+        String nameItem = itemKey != null ? itemKey.getPath() : "missing";
+        ResourceLocation texture = getTexture(namespace, nameItem, skin);
+        var baseMaterial = new Material(InventoryMenu.BLOCK_ATLAS, texture);
+        Material baseLocation = getMaterial(context, "base");
+        TextureAtlasSprite sprite;
+        if (!stack.isEmpty()) {
+            sprite = spriteGetter.apply(baseMaterial);
+        } else if (baseLocation != null) {
+            sprite = spriteGetter.apply(baseLocation);
+        } else {
+            sprite = spriteGetter.apply(baseMaterial);
+        }
+
+        var unbaked = UnbakedGeometryHelper.createUnbakedItemElements(0, sprite);
+        var quads = UnbakedGeometryHelper.bakeElements(unbaked, spriteGetter, modelState);
+
+        builder.addQuads(getLayerRenderTypes(), quads);
+        builder.setParticle(particleSprite);
+        return builder.build();
+    }
 
     private static String getItemName(ItemStack stack) {
         return BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath();
@@ -120,15 +128,12 @@ public class GunIconModels implements IUnbakedGeometry<GunIconModels> {
 
         @Override
         public BakedModel resolve(BakedModel originalModel, ItemStack stack, @Nullable ClientLevel level,
-                                  @Nullable LivingEntity entity, int integer) {
-            var overriden = nested.resolve(originalModel, stack, level, entity, integer);
+                                  @Nullable LivingEntity entity, int seed) {
+            BakedModel overriden = nested.resolve(originalModel, stack, level, entity, seed);
             if (overriden != originalModel) return overriden;
             if (!StackUtils.getVariant(stack).equals("default")) {
-                var unbaked = this.parent.withStack(stack);
-                var bakedModel = unbaked.bake(owner, baker, Material::sprite, BlockModelRotation.X0_Y0, this
-//                        ,ResourceLocation.tryBuild(Ntgl.MOD_ID, "gun_icon_override")
-                );
-                return bakedModel;
+                GunIconModels unbaked = this.parent.withStack(stack);
+                return unbaked.bake(owner, baker, Material::sprite, BlockModelRotation.X0_Y0, nested);
             }
             return originalModel;
         }
