@@ -8,7 +8,7 @@ version="${mod_version}"
 displayName="NukaTeam's Gun Lib"
 displayURL="https://discord.com/invite/njb6EKaDVJ"
 logoFile="logo.png"
-authors="Jetug, Dayton"
+authors="${mod_authors}"
 credits = "MrCrayfish, MigaMi"
 description="Core for weapon mods"
 
