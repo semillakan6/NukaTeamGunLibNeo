@@ -2,14 +2,15 @@ package com.nukateam.ntgl.mixin.ntgl.client;
 
 import com.nukateam.ntgl.client.util.handler.AimingHandler;
 import com.nukateam.ntgl.client.util.handler.GunRenderingHandler;
+import com.nukateam.ntgl.client.util.handler.WeaponPoseApplier;
 import com.nukateam.ntgl.common.data.WeaponData;
 import com.nukateam.ntgl.common.foundation.item.interfaces.IWeapon;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.nukateam.ntgl.common.util.util.WeaponModifierHelper;
-import com.nukateam.ntgl.common.util.util.WeaponStateHelper;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.layers.*;
 import net.minecraft.world.InteractionHand;
@@ -28,16 +29,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ItemInHandLayer.class)
 public class ItemInHandLayerMixin {
     @SuppressWarnings("ConstantConditions")
-    @Inject(method = "renderArmWithItem", at = @At(value = "HEAD"), cancellable = true, remap=false)
+    @Inject(method = "renderArmWithItem", at = @At(value = "HEAD"), cancellable = true)
     private void renderArmWithItem(LivingEntity entity, ItemStack stack,
                                        ItemDisplayContext transformType, HumanoidArm arm,
                                        PoseStack poseStack, MultiBufferSource source, int light, CallbackInfo ci) {
         var minecraft = Minecraft.getInstance();
-        var hand = minecraft.options.mainHand().get() == arm ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND;
+        var hand = entity.getMainArm() == arm ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND;
 
         if(stack != entity.getItemInHand(hand)) return;
 
-        var oppositeHand = minecraft.options.mainHand().get() == arm ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+        var oppositeHand = entity.getMainArm() == arm ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
         var oppositeStack = entity.getItemInHand(oppositeHand);
 
         if (hand == InteractionHand.OFF_HAND) {
@@ -63,6 +64,11 @@ public class ItemInHandLayerMixin {
                                          MultiBufferSource source, int light, float deltaTicks) {
         poseStack.pushPose();
         {
+            if (layer.getParentModel() instanceof HumanoidModel<?> humanoid) {
+                @SuppressWarnings("unchecked")
+                var model = (HumanoidModel<LivingEntity>) (Object) humanoid;
+                WeaponPoseApplier.applyWeaponPose(model, entity);
+            }
             layer.getParentModel().translateToHand(arm, poseStack);
             poseStack.mulPose(Axis.XP.rotationDegrees(-90F));
             poseStack.mulPose(Axis.YP.rotationDegrees(180F));

@@ -155,7 +155,7 @@ public class HammerPose extends WeaponPose {
         var side = hand == InteractionHand.OFF_HAND ? 1 : -1;
         poseStack.translate(0.45 * side, -0.5, -1.2);
 
-        var right = Minecraft.getInstance().options.mainHand().get() == HumanoidArm.RIGHT;
+        var right = entity.getMainArm() == HumanoidArm.RIGHT;
         var leftHanded = right ? 1 : -1;
 
 //        poseStack.mulPose(Axis.XP.rotationDegrees(ClientDebug.X));

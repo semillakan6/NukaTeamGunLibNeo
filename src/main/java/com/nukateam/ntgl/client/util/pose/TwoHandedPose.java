@@ -104,8 +104,7 @@ public class TwoHandedPose extends WeaponPose {
         if(hand == InteractionHand.OFF_HAND) return;
 
         if (Config.CLIENT.display.oldAnimations.get()) {
-            var mc = Minecraft.getInstance();
-            var right = mc.options.mainHand().get() == HumanoidArm.RIGHT ? hand == InteractionHand.MAIN_HAND : hand == InteractionHand.OFF_HAND;
+            var right = entity.getMainArm() == HumanoidArm.RIGHT ? hand == InteractionHand.MAIN_HAND : hand == InteractionHand.OFF_HAND;
             var mainArm = right ? rightArm : leftArm;
             var secondaryArm = right ? leftArm : rightArm;
 
@@ -126,7 +125,7 @@ public class TwoHandedPose extends WeaponPose {
     @Override
     public void applyGeoModelRotation(LivingEntity entity, GeoBone rightArm, GeoBone leftArm, GeoBone head, InteractionHand interactionHand) {
         var aimProgress = AimingHandler.get().getAimProgress(entity, Minecraft.getInstance().getTimer().getRealtimeDeltaTicks());
-        var right = interactionHand == InteractionHand.MAIN_HAND;
+        var mainIsRightArm = entity.getMainArm() == HumanoidArm.RIGHT;
 
         rightArm.setRotX((float)Math.toRadians(head.getRotX()));
         rightArm.setRotY((float)Math.toRadians(head.getRotY()));
@@ -137,17 +136,17 @@ public class TwoHandedPose extends WeaponPose {
         leftArm.setRotZ((float)Math.toRadians(head.getRotZ()));
 
         rightArm.setRotX((float)Math.toRadians(55F + aimProgress * 30F));
-        rightArm.setRotY((float)Math.toRadians((45F + aimProgress * 20F) * (right ? 1F : -1F)));
+        rightArm.setRotY((float)Math.toRadians((45F + aimProgress * 20F) * (mainIsRightArm ? 1F : -1F)));
 
         leftArm.setRotX((float)Math.toRadians(42F + aimProgress * 48F));
-        leftArm.setRotY((float)Math.toRadians((15F + aimProgress * 5F) * (right ? 1F : -1F)));
+        leftArm.setRotY((float)Math.toRadians((15F + aimProgress * 5F) * (mainIsRightArm ? 1F : -1F)));
     }
 
     @Override
     @OnlyIn(Dist.CLIENT)
     public void applyEntityPreRender(LivingEntity entity, InteractionHand hand, float aimProgress, PoseStack poseStack, MultiBufferSource buffer) {
         if (Config.CLIENT.display.oldAnimations.get()) {
-            boolean right = Minecraft.getInstance().options.mainHand().get() == HumanoidArm.RIGHT ? hand == InteractionHand.MAIN_HAND : hand == InteractionHand.OFF_HAND;
+            boolean right = entity.getMainArm() == HumanoidArm.RIGHT ? hand == InteractionHand.MAIN_HAND : hand == InteractionHand.OFF_HAND;
             entity.yBodyRotO = entity.yRotO + (right ? 25F : -25F) + aimProgress * (right ? 20F : -20F);
             entity.yBodyRot = entity.getYRot() + (right ? 25F : -25F) + aimProgress * (right ? 20F : -20F);
         } else {

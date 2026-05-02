@@ -53,6 +53,7 @@ public class Ntgl {
     public static boolean playerAnimatorLoaded = false;
     public static boolean subtleEffectsLoaded = false;
     public static boolean betterCombatLoaded = false;
+    public static boolean emfLoaded = false;
 
     public Ntgl(IEventBus MOD_EVENT_BUS, ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, Config.clientSpec);
@@ -99,6 +100,7 @@ public class Ntgl {
         playerAnimatorLoaded = ModList.get().isLoaded("playeranimator");
         subtleEffectsLoaded = ModList.get().isLoaded("subtle_effects");
         betterCombatLoaded = ModList.get().isLoaded("bettercombat");
+        emfLoaded = ModList.get().isLoaded("entity_model_features");
 
         AmmoHolders.register();
         AnimationType.register();

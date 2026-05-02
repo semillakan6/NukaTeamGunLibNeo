@@ -59,8 +59,7 @@ public abstract class WeaponPose implements IHeldAnimation {
     @OnlyIn(Dist.CLIENT)
     public void applyHumanoidModelRotation(LivingEntity entity, ModelPart rightArm, ModelPart leftArm,
                                            ModelPart head, InteractionHand hand, float aimProgress) {
-        var mc = Minecraft.getInstance();
-        var right = mc.options.mainHand().get() == HumanoidArm.RIGHT ? hand == InteractionHand.MAIN_HAND : hand == InteractionHand.OFF_HAND;
+        var right = entity.getMainArm() == HumanoidArm.RIGHT ? hand == InteractionHand.MAIN_HAND : hand == InteractionHand.OFF_HAND;
         var mainArm = right ? rightArm : leftArm;
         var secondaryArm = right ? leftArm : rightArm;
 
@@ -89,8 +88,8 @@ public abstract class WeaponPose implements IHeldAnimation {
     @OnlyIn(Dist.CLIENT)
     public void applyEntityPreRender(LivingEntity entity, InteractionHand hand, float aimProgress,
                                      PoseStack poseStack, MultiBufferSource buffer) {
-        boolean right = Minecraft.getInstance().options.mainHand().get() == HumanoidArm.RIGHT ?
-                hand == InteractionHand.MAIN_HAND : hand == InteractionHand.OFF_HAND;
+        boolean right = entity.getMainArm() == HumanoidArm.RIGHT
+                ? hand == InteractionHand.MAIN_HAND : hand == InteractionHand.OFF_HAND;
         float angle = this.getEntityPitch(entity);
         float angleAbs = Math.abs(angle);
         float zoom = this.hasAimPose() ? aimProgress : 0F;
@@ -111,8 +110,8 @@ public abstract class WeaponPose implements IHeldAnimation {
 //        poseStack.translate((side * 3) / 16F, 0, -0.625);
 //
 //        if (hand == InteractionHand.MAIN_HAND) {
-            var right = Minecraft.getInstance().options.mainHand().get() == HumanoidArm.RIGHT;
-            var leftHanded = right ? 1 : -1;
+            var mainIsRightArm = entity.getMainArm() == HumanoidArm.RIGHT;
+            var leftHanded = mainIsRightArm ? 1 : -1;
             poseStack.translate(0, 0, 0.05);
 
             var angle = this.getEntityPitch(entity);

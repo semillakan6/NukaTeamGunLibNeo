@@ -1,8 +1,8 @@
 package com.nukateam.ntgl.common.util.helpers;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -11,12 +11,15 @@ public class PlayerHelper {
         return hand == InteractionHand.MAIN_HAND ? HumanoidArm.RIGHT : HumanoidArm.LEFT;
     }
 
+    /**
+     * Whether {@code hand} is the entity's main hand, using the entity's dominant arm (third-person safe).
+     */
     @OnlyIn(Dist.CLIENT)
-    public static boolean isRight(InteractionHand hand){
-        var mainHand = Minecraft.getInstance().options.mainHand().get();
-        return mainHand == HumanoidArm.RIGHT ?
-                hand == InteractionHand.MAIN_HAND :
-                hand == InteractionHand.OFF_HAND;
+    public static boolean isRight(LivingEntity entity, InteractionHand hand) {
+        var mainArm = entity.getMainArm();
+        return mainArm == HumanoidArm.RIGHT
+                ? hand == InteractionHand.MAIN_HAND
+                : hand == InteractionHand.OFF_HAND;
     }
 
     public static InteractionHand convertHand(HumanoidArm arm){

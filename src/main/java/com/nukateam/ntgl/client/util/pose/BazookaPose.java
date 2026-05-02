@@ -68,7 +68,7 @@ public class BazookaPose extends WeaponPose {
     public void applyHumanoidModelRotation(LivingEntity entity, ModelPart rightArm, ModelPart leftArm, ModelPart head, InteractionHand hand, float aimProgress) {
         if(hand == InteractionHand.OFF_HAND) return;
         if (Config.CLIENT.display.oldAnimations.get()) {
-            boolean right = PlayerHelper.isRight(hand);
+            boolean right = PlayerHelper.isRight(entity, hand);
             ModelPart mainArm = right ? rightArm : leftArm;
             ModelPart secondaryArm = right ? leftArm : rightArm;
             mainArm.xRot = (float) Math.toRadians(-90F);
@@ -95,7 +95,7 @@ public class BazookaPose extends WeaponPose {
     @Override
     public void applyEntityPreRender(LivingEntity entity, InteractionHand hand, float aimProgress, PoseStack poseStack, MultiBufferSource buffer) {
         if (Config.CLIENT.display.oldAnimations.get()) {
-            boolean right = Minecraft.getInstance().options.mainHand().get() == HumanoidArm.RIGHT ? hand == InteractionHand.MAIN_HAND : hand == InteractionHand.OFF_HAND;
+            boolean right = entity.getMainArm() == HumanoidArm.RIGHT ? hand == InteractionHand.MAIN_HAND : hand == InteractionHand.OFF_HAND;
             entity.yBodyRotO = entity.yRotO + 35F * (right ? 1F : -1F);
             entity.yBodyRot = entity.getYRot() + 35F * (right ? 1F : -1F);
         } else {
