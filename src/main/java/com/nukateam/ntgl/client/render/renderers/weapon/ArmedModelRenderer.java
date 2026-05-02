@@ -6,9 +6,11 @@ import com.nukateam.geo.render.DynamicGeoItemRenderer;
 import com.nukateam.geo.render.ItemAnimator;
 import com.nukateam.ntgl.client.handlers.ClientTickHandler;
 import com.nukateam.ntgl.client.render.layers.GlowingLayer;
-import com.nukateam.ntgl.client.util.ClientDebug;
 import com.nukateam.ntgl.client.util.helpers.TransformUtils;
+import com.nukateam.ntgl.common.data.WeaponData;
+import com.nukateam.ntgl.common.foundation.item.interfaces.IWeapon;
 import com.nukateam.ntgl.common.util.helpers.compatibility.ChassisHelper;
+import com.nukateam.ntgl.common.util.util.WeaponModifierHelper;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.model.GeoModel;
 import software.bernie.geckolib.util.ClientUtil;
@@ -27,6 +29,17 @@ import static com.nukateam.ntgl.client.render.GeoRenderUtils.*;
 import static com.nukateam.ntgl.client.util.ClientDebug.*;
 
 public class ArmedModelRenderer<Animator extends ItemAnimator> extends DynamicGeoItemRenderer<Animator> {
+    /** FP offsets tuned for one-handed pistols; geo left_arm bone sits farther out than two-handed rigs. */
+    private static final double FP_LEFT_ARM_X_ONE = -65 / 10d / 16d;
+    private static final double FP_LEFT_ARM_Y_ONE = 0 / 10d / 16d;
+    private static final double FP_RIGHT_ARM_X_ONE = 50 / 10d / 16d;
+    private static final double FP_RIGHT_ARM_Y_ONE = -20 / 10d / 16d;
+    /** Supporting hand pulled inward/down slightly so extended two-handed kits meet the fore grip. */
+    private static final double FP_LEFT_ARM_X_TWO = -38 / 10d / 16d;
+    private static final double FP_LEFT_ARM_Y_TWO = -8 / 10d / 16d;
+    private static final double FP_RIGHT_ARM_X_TWO = 44 / 10d / 16d;
+    private static final double FP_RIGHT_ARM_Y_TWO = -22 / 10d / 16d;
+
     public static final String RIGHT_ARM = "right_arm";
     public static final String LEFT_ARM = "left_arm";
     public static final String RIGHT_ARM_ANIM = "right_arm_anim";
@@ -115,6 +128,17 @@ public class ArmedModelRenderer<Animator extends ItemAnimator> extends DynamicGe
                 poseStack.translate(0.01, -0.27, 0.05);
                 poseStack.scale(bone.getScaleX(), bone.getScaleY(), bone.getScaleZ());
 
+                var entity = this.currentEntity;
+                var mainStack = entity != null ? entity.getMainHandItem() : ItemStack.EMPTY;
+                boolean twoHandedFp = entity != null
+                        && mainStack.getItem() instanceof IWeapon
+                        && !WeaponModifierHelper.isOneHanded(new WeaponData(mainStack, entity));
+                double supportingX = twoHandedFp ? FP_LEFT_ARM_X_TWO : FP_LEFT_ARM_X_ONE;
+                double supportingY = twoHandedFp ? FP_LEFT_ARM_Y_TWO : FP_LEFT_ARM_Y_ONE;
+                double mainX = twoHandedFp ? FP_RIGHT_ARM_X_TWO : FP_RIGHT_ARM_X_ONE;
+                double mainY = twoHandedFp ? FP_RIGHT_ARM_Y_TWO : FP_RIGHT_ARM_Y_ONE;
+                double dbgZ = Z / 10d / 16d;
+
                 if(ChassisHelper.isPlayerInChassis()){
                     if(isRightHand) {
                         if (bone.getName().equals(LEFT_ARM)) {
@@ -133,22 +157,18 @@ public class ArmedModelRenderer<Animator extends ItemAnimator> extends DynamicGe
                 else {
                     if (isRightHand) {
                         if (bone.getName().equals(LEFT_ARM)) {
-//                            poseStack.translate(-8 / 10d / 16d, 0, 0);
-//                            poseStack.translate(X / 10d / 16d, Y / 10d / 16d, Z / 10d / 16d);
-//                            poseStack.translate(X / 10d / 16d, Y / 10d / 16d, Z / 10d / 16d);
-                            poseStack.translate(-65 / 10d / 16d, 0 / 10d / 16d, Z / 10d / 16d);
+                            poseStack.translate(supportingX, supportingY, dbgZ);
                             renderRightArm(poseStack, bone, packedLight, bufferSource, false);
                         } else if (bone.getName().equals(RIGHT_ARM)) {
-//                            poseStack.translate(4 / 10d / 16d, 0, -3 / 10d / 16d);
-                            poseStack.translate(50 / 10d / 16d, -20 / 10d / 16d, Z / 10d / 16d);
+                            poseStack.translate(mainX, mainY, dbgZ);
                             renderRightArm(poseStack, bone, packedLight, bufferSource, true);
                         }
                     } else {
                         if (bone.getName().equals(LEFT_ARM)) {
-                            poseStack.translate(50 / 10d / 16d, -20 / 10d / 16d, Z / 10d / 16d);
+                            poseStack.translate(mainX, mainY, dbgZ);
                             renderRightArm(poseStack, bone, packedLight, bufferSource, true);
                         } else if (bone.getName().equals(RIGHT_ARM)) {
-                            poseStack.translate(-65 / 10d / 16d, 0 / 10d / 16d, Z / 10d / 16d);
+                            poseStack.translate(supportingX, supportingY, dbgZ);
                             renderRightArm(poseStack, bone, packedLight, bufferSource, false);
                         }
                     }

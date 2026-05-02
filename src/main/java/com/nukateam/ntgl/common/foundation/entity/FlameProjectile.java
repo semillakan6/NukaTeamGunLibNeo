@@ -36,6 +36,7 @@ public class FlameProjectile extends ProjectileEntity {
 
     @Override
     protected void onProjectileTick() {
+        // Does not call super — flame/smoke trail replaces generic ballistic dust.
         if (this.level().isClientSide) {
             for (int i = 5; i > 0; i--) {
                 this.level().addParticle(ParticleTypes.FLAME, true, this.getX() - (this.getDeltaMovement().x() / i), this.getY() - (this.getDeltaMovement().y() / i), this.getZ() - (this.getDeltaMovement().z() / i), 0, 0, 0);

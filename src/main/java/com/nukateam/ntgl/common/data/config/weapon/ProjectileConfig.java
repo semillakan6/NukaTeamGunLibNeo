@@ -34,7 +34,8 @@ public class ProjectileConfig implements INBTSerializable<CompoundTag> {
     private int life = 20;
     @Optional private ProjectileType projectile = ProjectileType.BULLET;
     @Optional private ResourceKey<DamageType> damageType = NtglDamageTypes.BULLET;
-    @Optional private boolean visible;
+    /** Default true so ballistic ammo renders without every datapack setting {@code "visible": true}. */
+    @Optional private boolean visible = true;
     @Optional private boolean gravity;
     @Optional private boolean affectedByFluid = true;
     @Optional private boolean damageReduceOverLife;
@@ -147,7 +148,7 @@ public class ProjectileConfig implements INBTSerializable<CompoundTag> {
 
         var object = new JsonObject();
 
-        if (this.visible) object.addProperty("visible", true);
+        if (!this.visible) object.addProperty("visible", false);
         object.addProperty("damage", this.damage);
         object.addProperty("size", this.size);
         object.addProperty("speed", this.speed);

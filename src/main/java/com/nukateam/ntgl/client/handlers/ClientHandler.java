@@ -1,5 +1,6 @@
 package com.nukateam.ntgl.client.handlers;
 
+import com.nukateam.ntgl.client.compat.BetterCombatClientHooks;
 import com.nukateam.ntgl.client.registry.*;
 import com.nukateam.ntgl.client.util.handler.*;
 import com.nukateam.ntgl.client.input.GunButtonBindings;
@@ -42,6 +43,10 @@ public class ClientHandler {
 //            ControllerHandler.init();
             NeoForge.EVENT_BUS.register(new ControllerHandler());
             GunButtonBindings.register();
+        }
+
+        if (Ntgl.betterCombatLoaded) {
+            BetterCombatClientHooks.register();
         }
 
 //        setupRenderLayers();

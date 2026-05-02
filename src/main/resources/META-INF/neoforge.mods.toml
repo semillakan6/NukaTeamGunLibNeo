@@ -48,5 +48,11 @@ mandatory=false
 versionRange="[0.16.3,)"
 ordering="AFTER"
 side="CLIENT"
+[[dependencies.${mod_id}]]
+modId="bettercombat"
+mandatory=false
+versionRange="[2.1.0,)"
+ordering="NONE"
+side="BOTH"
 [modproperties.ntgl]
     catalogueImageIcon=""

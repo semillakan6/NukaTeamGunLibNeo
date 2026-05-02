@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -30,20 +31,26 @@ public class ProjectileRenderer extends EntityRenderer<ProjectileEntity> {
     public void render(ProjectileEntity entity, float entityYaw, float partialTicks, PoseStack poseStack,
                        MultiBufferSource renderTypeBuffer, int light) {
 
-        if (!entity.isVisible() || entity.tickCount <= 1)
+        if (!entity.isVisible())
+            return;
+
+        ItemStack renderStack = entity.getItem();
+        if (renderStack.isEmpty())
+            renderStack = entity.getWeapon();
+        if (renderStack.isEmpty())
             return;
 
         poseStack.pushPose();
 
-        if (!ModelRenderUtil.getModel(entity.getItem()).isGui3d()) {
+        if (!ModelRenderUtil.getModel(renderStack).isGui3d()) {
             poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-            Minecraft.getInstance().getItemRenderer().renderStatic(entity.getItem(), ItemDisplayContext.GROUND, light, OverlayTexture.NO_OVERLAY, poseStack, renderTypeBuffer, entity.level(), 0);
+            Minecraft.getInstance().getItemRenderer().renderStatic(renderStack, ItemDisplayContext.GROUND, light, OverlayTexture.NO_OVERLAY, poseStack, renderTypeBuffer, entity.level(), 0);
         } else {
             poseStack.mulPose(Axis.YP.rotationDegrees(180F));
             poseStack.mulPose(Axis.YP.rotationDegrees(entityYaw));
             poseStack.mulPose(Axis.XP.rotationDegrees(entity.getXRot()));
-            Minecraft.getInstance().getItemRenderer().renderStatic(entity.getItem(), ItemDisplayContext.NONE, light, OverlayTexture.NO_OVERLAY, poseStack, renderTypeBuffer, entity.level(), 0);
+            Minecraft.getInstance().getItemRenderer().renderStatic(renderStack, ItemDisplayContext.NONE, light, OverlayTexture.NO_OVERLAY, poseStack, renderTypeBuffer, entity.level(), 0);
         }
 
         poseStack.popPose();

@@ -6,6 +6,7 @@ import com.nukateam.ntgl.common.data.config.weapon.ProjectileConfig;
 import com.nukateam.ntgl.Config;
 import com.nukateam.ntgl.common.data.config.weapon.General;
 import com.nukateam.ntgl.common.data.holders.AmmoHolder;
+import com.nukateam.ntgl.common.data.holders.ProjectileType;
 import com.nukateam.ntgl.common.data.holders.WeaponMode;
 import com.nukateam.ntgl.common.foundation.init.NtglComponents;
 import com.nukateam.ntgl.common.foundation.item.interfaces.IWeapon;
@@ -27,6 +28,7 @@ import com.nukateam.ntgl.common.foundation.init.ModSyncedDataKeys;
 import com.nukateam.ntgl.common.util.world.ExplosionUtils;
 import com.nukateam.ntgl.common.network.PacketHandler;
 import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.RegistryAccess;
@@ -53,6 +55,7 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.*;
 import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Vector3f;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -78,6 +81,8 @@ public class ProjectileEntity extends Entity{
     protected double modifiedGravity;
     protected int life;
     protected int pierceCount;
+    /** First fluid-contact splash packet; do not use {@link Entity#wasTouchingWater} (updated in {@code super.tick()} before ray tests). */
+    private boolean fluidSplashEffectsSent;
 
     public ProjectileEntity(EntityType<? extends Entity> entityType, Level worldIn) {
         super(entityType, worldIn);
@@ -300,21 +305,55 @@ public class ProjectileEntity extends Entity{
 
         var hitEntities = getHitEntityResult(startVec, endVec);
 
-        if (hitEntities != null && !hitEntities.isEmpty()) {
-            for (var hit : hitEntities) {
-                var entityHitResult = new ExtendedEntityRayTraceResult(hit);
+        boolean hasBlockHit = result.getType() != HitResult.Type.MISS && result instanceof BlockHitResult;
+        double blockDistSq = hasBlockHit ? startVec.distanceToSqr(result.getLocation()) : Double.POSITIVE_INFINITY;
 
-                if (entityHitResult.getEntity() instanceof Player playerTarget) {
-                    if (this.shooter instanceof Player playerShooter && !playerShooter.canHarmPlayer(playerTarget)) {
-                        entityHitResult = null;
-                    }
+        var validEntities = new ArrayList<EntityResult>();
+        if (hitEntities != null) {
+            for (var hit : hitEntities) {
+                if (hit.getEntity() instanceof Player playerTarget
+                        && this.shooter instanceof Player playerShooter
+                        && !playerShooter.canHarmPlayer(playerTarget)) {
+                    continue;
                 }
-                if (entityHitResult != null) {
-                    this.onHit(entityHitResult, startVec, endVec);
+                validEntities.add(hit);
+            }
+        }
+
+        EntityResult closestEntity = null;
+        double closestEntityDistSq = Double.POSITIVE_INFINITY;
+        for (var hit : validEntities) {
+            double d = startVec.distanceToSqr(hit.getHitPos());
+            if (d < closestEntityDistSq) {
+                closestEntityDistSq = d;
+                closestEntity = hit;
+            }
+        }
+
+        if (closestEntity == null) {
+            this.onHit(result, startVec, endVec);
+            return;
+        }
+
+        if (!hasBlockHit) {
+            if (pierceCount == 0) {
+                this.onHit(new ExtendedEntityRayTraceResult(closestEntity), startVec, endVec);
+            } else {
+                for (var hit : validEntities) {
+                    this.onHit(new ExtendedEntityRayTraceResult(hit), startVec, endVec);
                 }
             }
-        } else {
+            return;
+        }
+
+        if (blockDistSq <= closestEntityDistSq) {
             this.onHit(result, startVec, endVec);
+        } else if (pierceCount == 0) {
+            this.onHit(new ExtendedEntityRayTraceResult(closestEntity), startVec, endVec);
+        } else {
+            for (var hit : validEntities) {
+                this.onHit(new ExtendedEntityRayTraceResult(hit), startVec, endVec);
+            }
         }
     }
 
@@ -344,7 +383,45 @@ public class ProjectileEntity extends Entity{
         return (value) -> false;
     }
 
-    protected void onProjectileTick() {}
+    protected void onProjectileTick() {
+        spawnClientBulletTrailParticles();
+    }
+
+    /**
+     * Dust trail for plain ballistic entities. {@link MissileEntity}, {@link FlameProjectile}, and beam/laser
+     * types override {@link #onProjectileTick()} without calling super, so they keep their own VFX only.
+     */
+    protected void spawnClientBulletTrailParticles() {
+        if (!level().isClientSide()) return;
+        if (!Config.CLIENT.particle.enableProjectileTrails.get()) return;
+        if (!projectile.isVisible()) return;
+        var projType = projectile.getProjectileType();
+        if (projType != ProjectileType.BULLET && projType != ProjectileType.ARROW_LIKE) return;
+
+        var motion = getDeltaMovement();
+        if (motion.lengthSqr() < 1.0E-8D) {
+            motion = position().subtract(this.xOld, this.yOld, this.zOld);
+        }
+        if (motion.lengthSqr() < 1.0E-8D) {
+            motion = getViewVector(1f);
+        }
+
+        int rgb = projectile.getTrailColor();
+        float cr = ((rgb >> 16) & 0xFF) / 255.0F;
+        float cg = ((rgb >> 8) & 0xFF) / 255.0F;
+        float cb = (rgb & 0xFF) / 255.0F;
+        float dustScale = 0.22F + 0.12F * (float) Mth.clamp(projectile.getTrailLengthMultiplier(), 0.25D, 4.0D);
+        var dust = new DustParticleOptions(new Vector3f(cr, cg, cb), dustScale);
+
+        int count = Mth.clamp(Mth.ceil(3.0 * projectile.getTrailLengthMultiplier()), 1, 10);
+        for (int i = count; i > 0; i--) {
+            double trace = i / (double) count * 0.35;
+            double px = getX() - motion.x * trace;
+            double py = getY() - motion.y * trace;
+            double pz = getZ() - motion.z * trace;
+            level().addParticle(dust, true, px, py, pz, 0.0D, 0.0D, 0.0D);
+        }
+    }
 
     protected void onExpired() {
         if(ExplosionUtils.isExplosive(projectile.getExplosion())){
@@ -479,8 +556,8 @@ public class ProjectileEntity extends Entity{
         var fluidState = state.getFluidState();
         var isLava = fluidState.is(FluidTags.LAVA);
 
-        if (!this.wasTouchingWater) {
-            wasTouchingWater = true;
+        if (!this.fluidSplashEffectsSent) {
+            this.fluidSplashEffectsSent = true;
             PacketHandler.getPlayChannel().sendToNearbyPlayers(
                     () -> LevelLocation.create((ServerLevel)level(), pos, 32),
                     new S2CMessageProjectileHitFluid(

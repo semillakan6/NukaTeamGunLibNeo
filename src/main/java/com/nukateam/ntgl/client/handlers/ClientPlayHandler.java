@@ -1,7 +1,6 @@
 package com.nukateam.ntgl.client.handlers;
 
 import com.nukateam.ntgl.Config;
-import com.nukateam.ntgl.Ntgl;
 import com.nukateam.ntgl.client.audio.GunShotSound;
 import com.nukateam.ntgl.client.util.handler.*;
 import com.nukateam.ntgl.common.network.message.weapon.*;
@@ -29,7 +28,6 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 
 import static com.nukateam.ntgl.client.render.renderers.misc.DeathFxRenderer.createDeathEffectClient;
-import static com.nukateam.ntgl.common.util.helpers.compatibility.SubtleEffectsHelper.doSplashEffect;
 
 /**
  * Author: MrCrayfish
@@ -186,17 +184,9 @@ public class ClientPlayHandler {
     }
 
     public static void handleProjectileHitFluid(S2CMessageProjectileHitFluid message) {
-        var level = Minecraft.getInstance().level;
-        var projectile = level.getEntity(message.getProjectileId());
+        if (Minecraft.getInstance().level == null) return;
 
-//        if(projectile instanceof ProjectileEntity projectileEntity){
-//            projectileEntity.setPos(message.getBlockPos());
-//            projectileEntity.doSplashEffect(message);
-//        }
-//        else
-        if(Ntgl.subtleEffectsLoaded){
-            EffectHelper.doSplashEffect(message.getPos(), message.getSize(), message.getSpeed(), message.isInLava());
-        }
+        EffectHelper.doSplashEffect(message.getPos(), message.getSize(), message.getSpeed(), message.isInLava());
     }
 
     @Nullable

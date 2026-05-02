@@ -20,6 +20,7 @@ public class MissileEntity extends ProjectileEntity {
 
     @Override
     protected void onProjectileTick() {
+        // Does not call super — avoids stacking bullet dust on top of cloud/smoke/flame trail particles.
         if (this.level().isClientSide) {
             for (int i = 5; i > 0; i--) {
                 this.level().addParticle(ParticleTypes.CLOUD, true, this.getX() - (this.getDeltaMovement().x() / i), this.getY() - (this.getDeltaMovement().y() / i), this.getZ() - (this.getDeltaMovement().z() / i), 0, 0, 0);

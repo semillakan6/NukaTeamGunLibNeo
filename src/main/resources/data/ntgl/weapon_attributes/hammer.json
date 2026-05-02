@@ -1,0 +1,10 @@
+{
+  "parent": "bettercombat:hammer",
+  "attributes": {
+    "attacks": [
+      {
+        "damage_multiplier": 0
+      }
+    ]
+  }
+}

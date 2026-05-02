@@ -124,6 +124,9 @@ dependencies {
 
     compileOnly "mezz.jei:jei-1.21.1-common-api:19.25.0.322"
     compileOnly "mezz.jei:jei-1.21.1-neoforge-api:19.25.0.322"
+
+    // Better Combat (optional runtime): compile-only API for melee bridge + datapack weapon_attributes
+    compileOnly "maven.modrinth:better-combat:2NyTus6V"
     localRuntime "mezz.jei:jei-1.21.1-neoforge:19.25.0.322"
 
     // http://www.gradle.org/docs/current/userguide/dependency_management.html

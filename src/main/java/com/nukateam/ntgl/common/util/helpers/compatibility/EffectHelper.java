@@ -16,7 +16,9 @@ public class EffectHelper {
     public static void doSplashEffect(Vec3 pos, float size, float speed, boolean isInLava) {
         if (Ntgl.subtleEffectsLoaded && SubtleEffectsHelper.doSplashEffect(pos, size, speed, isInLava))
             return;
-        if(!isInLava){
+        if (isInLava) {
+            doLavaSplashEffect(pos, size, speed);
+        } else {
             doWaterSplashEffect(pos, size, speed);
         }
     }
@@ -25,6 +27,28 @@ public class EffectHelper {
         if(Ntgl.subtleEffectsLoaded) {
             SubtleEffectsHelper.doExplosionSplash(level, radius, position);
         }
+    }
+
+    private static void doLavaSplashEffect(Vec3 pos, float size, float speed) {
+        var level = Minecraft.getInstance().level;
+        if (level == null) return;
+        int count = Mth.ceil(2.0F + size * 12.0F);
+        for (int i = 0; i < count; i++) {
+            double ox = (random.nextDouble() * 2.0D - 1.0D) * size;
+            double oz = (random.nextDouble() * 2.0D - 1.0D) * size;
+            level.addParticle(ParticleTypes.LAVA, pos.x + ox, pos.y + 0.05D, pos.z + oz, 0.0D, 0.0D, 0.0D);
+            if ((i & 1) == 0) {
+                level.addParticle(
+                        ParticleTypes.SMOKE,
+                        pos.x + ox,
+                        pos.y + 0.1D,
+                        pos.z + oz,
+                        0.02D * speed,
+                        0.06D,
+                        0.02D * speed);
+            }
+        }
+        playSound(pos, SoundEvents.GENERIC_EXTINGUISH_FIRE, Mth.clamp(0.35F + size * 0.12F, 0.2F, 1.0F), 1.1F + random.nextFloat() * 0.15F);
     }
 
     private static void doWaterSplashEffect(Vec3 pos, float size, float speed) {

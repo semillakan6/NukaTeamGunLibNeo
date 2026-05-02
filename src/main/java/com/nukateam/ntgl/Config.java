@@ -111,11 +111,13 @@ public class Config
         public final ModConfigSpec.BooleanValue enableBlood;
         public final ModConfigSpec.BooleanValue enableDeathFX;
         public final ModConfigSpec.DoubleValue impactParticleDistance;
+        public final ModConfigSpec.BooleanValue enableProjectileTrails;
 
         public Particle(ModConfigSpec.Builder builder)
         {
             builder.comment("Properties relating to particles").push("particle");
             {
+                this.enableProjectileTrails = builder.comment("If true, bullets and similar projectiles emit a short dust trail on the client so trajectory is easier to see").define("enableProjectileTrails", true);
                 this.bulletHoleLifeMin = builder.comment("The minimum duration in ticks before bullet holes will disappear").defineInRange("bulletHoleLifeMin", 150, 0, Integer.MAX_VALUE);
                 this.bulletHoleLifeMax = builder.comment("The maximum duration in ticks before bullet holes will disappear").defineInRange("bulletHoleLifeMax", 200, 0, Integer.MAX_VALUE);
                 this.bulletHoleFadeThreshold = builder.comment("The percentage of the maximum life that must pass before particles begin fading away. 0 makes the particles always fade and 1 removes facing completely").defineInRange("bulletHoleFadeThreshold", 0.98, 0, 1.0);
