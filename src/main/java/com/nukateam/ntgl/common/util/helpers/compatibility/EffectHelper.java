@@ -14,8 +14,14 @@ public class EffectHelper {
     private static final RandomSource random = RandomSource.create();
 
     public static void doSplashEffect(Vec3 pos, float size, float speed, boolean isInLava) {
-        if (Ntgl.subtleEffectsLoaded && SubtleEffectsHelper.doSplashEffect(pos, size, speed, isInLava))
-            return;
+        if (Ntgl.subtleEffectsLoaded) {
+            try {
+                if (SubtleEffectsHelper.doSplashEffect(pos, size, speed, isInLava))
+                    return;
+            } catch (Throwable ignored) {
+                // Subtle Effects version/API mismatch (e.g. renamed ModParticles fields) — use vanilla below
+            }
+        }
         if (isInLava) {
             doLavaSplashEffect(pos, size, speed);
         } else {
@@ -24,8 +30,12 @@ public class EffectHelper {
     }
 
     public static void doExplosionSplash(Level level, float radius, Vec3 position) {
-        if(Ntgl.subtleEffectsLoaded) {
-            SubtleEffectsHelper.doExplosionSplash(level, radius, position);
+        if (Ntgl.subtleEffectsLoaded) {
+            try {
+                SubtleEffectsHelper.doExplosionSplash(level, radius, position);
+            } catch (Throwable ignored) {
+                // SE API mismatch; skip SE explosion splash
+            }
         }
     }
 

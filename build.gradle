@@ -113,8 +113,8 @@ dependencies {
 
     implementation "curse.maven:kotlin-for-forge-351264:6994056"
     implementation "curse.maven:fzzy-config-1005914:7085021"
-    // Version id from Modrinth (Subtle Effects 1.21.1-1.13.1); resolves for downstream mods (e.g. CGS runData)
-    implementation "maven.modrinth:subtle-effects:1cLpeR9D"
+    // Modrinth Subtle Effects 1.21.1-1.14.2 — matches current splash API (fluid id + SPLASH_EMITTER)
+    implementation "maven.modrinth:subtle-effects:bTFc0rVM"
 
     implementation 'curse.maven:controllable-317269:6850105'
     implementation "dev.kosmx.player-anim:player-animation-lib-forge:2.0.1+1.21.1"

@@ -559,11 +559,11 @@ public class ProjectileEntity extends Entity{
         if (!this.fluidSplashEffectsSent) {
             this.fluidSplashEffectsSent = true;
             PacketHandler.getPlayChannel().sendToNearbyPlayers(
-                    () -> LevelLocation.create((ServerLevel)level(), pos, 32),
+                    () -> LevelLocation.create((ServerLevel) level(), pos.x, pos.y, pos.z, 32),
                     new S2CMessageProjectileHitFluid(
                             pos,
                             getBbWidth(),
-                            (float)getDeltaMovement().length(),
+                            (float) getDeltaMovement().length(),
                             isLava,
                             this.getId())
             );
