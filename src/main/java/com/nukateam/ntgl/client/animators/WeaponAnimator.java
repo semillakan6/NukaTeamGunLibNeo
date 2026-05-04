@@ -82,6 +82,15 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
     private String lockedCycledAnim = "";
     /** Reload phase on the main controller; avoids restarting LOOP reload clips every frame. */
     private String mainReloadAnimKey = "";
+    /** Stable {@link RawAnimation} for the active reload phase ({@link #setAndContinue} needs same instance for GeckoLib to keep ticking PLAY_ONCE/LOOP). */
+    private RawAnimation cachedReloadRawAnimation = null;
+    /**
+     * GeckoLib only ignores redundant {@code setAnimation} when the {@link RawAnimation} instance equals the current
+     * one; {@code begin().then(...)} creates new builders every poll, so without CONTINUE the SHOT/HOLD LOOP restarts
+     * almost every frame.
+     */
+    private String lockedMainShotKey = "";
+    private String lockedHoldAnimKey = "";
     protected int prepareTime;
     protected int throwingTime;
     private WeaponData data;
@@ -183,6 +192,9 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
                 itemCache = getStack();
                 lockedCycledAnim = "";
                 mainReloadAnimKey = "";
+                cachedReloadRawAnimation = null;
+                lockedMainShotKey = "";
+                lockedHoldAnimKey = "";
                 return event.setAndContinue(playVoid());
             }
             try {
@@ -199,51 +211,81 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
 
                 if (!reloadHandler.isReloading(shooter, arm)) {
                     mainReloadAnimKey = "";
+                    cachedReloadRawAnimation = null;
+                }
+                if (!isShooting) {
+                    lockedMainShotKey = "";
+                } else {
+                    lockedHoldAnimKey = "";
                 }
 
                 if(ClientEquipHandler.get().isEquiping(arm)) {
+                    lockedHoldAnimKey = "";
                     animation = getEquipAnimation(event);
 //                    Ntgl.LOGGER.debug("!Equip");
                 }
                 else if(isPreparing()){
+                    lockedHoldAnimKey = "";
                     animation = getPrepareAnimation(event);
                 }
                 else if(isThrowing()){
+                    lockedHoldAnimKey = "";
                     animation = getThrowingAnimation(event);
                 }
                 else if(ClientMeleeHandler.isOnDelay(shooter, arm)){
+                    lockedHoldAnimKey = "";
                     animation = getMeleeDelayAnimation(event);
                 }
                 else if(ClientMeleeHandler.isOnCooldown(shooter, arm)){
+                    lockedHoldAnimKey = "";
                     animation = getMeleeCooldownAnimation(event);
                 }
                 else if (fireDelay > 0 && data.fireTimer > 0 && fireDelay != data.fireTimer) {
+                    lockedHoldAnimKey = "";
                     animation = getChargingAnimation(event, data);
                 }
                 else if (reloadHandler.isReloading(shooter, arm)) {
+                    lockedHoldAnimKey = "";
                     var start = ModSyncedDataKeys.RELOAD_START.getValue(shooter);
                     var end = ModSyncedDataKeys.RELOAD_END.getValue(shooter);
                     var reloadKey = start ? "start" : end ? "end" : "main";
-                    if (reloadKey.equals(mainReloadAnimKey)) {
-                        applyReloadAnimationSpeed(event);
-                        return PlayState.CONTINUE;
+                    if (!reloadKey.equals(mainReloadAnimKey)) {
+                        mainReloadAnimKey = reloadKey;
+                        cachedReloadRawAnimation = null;
                     }
-                    mainReloadAnimKey = reloadKey;
-                    animation = getReloadingAnimation(event);
+                    if (cachedReloadRawAnimation == null) {
+                        cachedReloadRawAnimation = getReloadingAnimation(event);
+                    }
+                    applyReloadAnimationSpeed(event);
+                    return event.setAndContinue(cachedReloadRawAnimation);
                 }
                 else if (isShooting) {
+                    var shotKey = resolvePlayedGunAnimName(SHOT);
+                    if (!shotKey.isEmpty() && shotKey.equals(lockedMainShotKey)) {
+                        syncShootingSpeed(event);
+                        return PlayState.CONTINUE;
+                    }
+                    lockedMainShotKey = shotKey;
                     animation = getShootingAnimation(event);
                 }
                 else if (reloadHandler.isReloading(shooter, PlayerHelper.getOpposite(arm))) {
+                    lockedHoldAnimKey = "";
                     animation = getHideAnimation(event);
                 }
                 else if (ClientHandler.getInspectionTicks(getArm()) > 0) {
+                    lockedHoldAnimKey = "";
                     animation = getInspectionAnimation(event);
                 }
                 else {
-                    if (currentGun == getWeapon())
+                    if (currentGun == getWeapon()) {
+                        var holdKey = resolvePlayedGunAnimName(HOLD);
+                        if (!holdKey.isEmpty() && holdKey.equals(lockedHoldAnimKey)) {
+                            return PlayState.CONTINUE;
+                        }
+                        lockedHoldAnimKey = holdKey;
                         animation = getHoldAnimation(event);
-                    else {
+                    } else {
+                        lockedHoldAnimKey = "";
                         currentGun = getWeapon();
                         animation = playGunAnim(SHOT, LOOP);
                     }
@@ -337,7 +379,7 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
         return PlayState.STOP;
     }
 
-    /** Keeps reload clip speed in sync when we {@link PlayState#CONTINUE} the main controller reload. */
+    /** Keeps reload clip speed in sync when re-passing the cached reload {@link RawAnimation} each poll. */
     private void applyReloadAnimationSpeed(AnimationState<WeaponAnimator> event) {
         if (ModSyncedDataKeys.RELOAD_START.getValue(getEntity())) {
             animationHelper.syncAnimation(event, reloadStartTime, Animations.RELOAD_START);
@@ -405,8 +447,32 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
 
     protected RawAnimation getShootingAnimation(AnimationState<WeaponAnimator> event) {
             var animation = playGunAnim(SHOT, LOOP);
-            animationHelper.syncAnimation(event, rate, SHOT);
+            syncShootingSpeed(event);
             return animation;
+    }
+
+    private void syncShootingSpeed(AnimationState<WeaponAnimator> event) {
+        var name = resolvePlayedGunAnimName(SHOT);
+        if (!name.isEmpty())
+            animationHelper.syncAnimation(event, rate, name);
+        else
+            animationHelper.syncAnimation(event, rate, SHOT);
+    }
+
+    /**
+     * First animated clip name {@link #playGunAnim} picks for the logical label (must match for sync duration / CONTINUE).
+     */
+    private String resolvePlayedGunAnimName(String logicalName) {
+        if (isFirstPerson(getTransformType())) {
+            return getGunAnim(logicalName);
+        }
+        var tpvOneHand = logicalName + ONE_HAND_SUFFIX + TPV_SUFFIX;
+        var tpv = logicalName + TPV_SUFFIX;
+        if (isOneHanded() && animationHelper.hasAnimation(tpvOneHand))
+            return tpvOneHand;
+        if (animationHelper.hasAnimation(tpv))
+            return tpv;
+        return "";
     }
 
     protected RawAnimation getReloadingAnimation(AnimationState<WeaponAnimator> event) {
