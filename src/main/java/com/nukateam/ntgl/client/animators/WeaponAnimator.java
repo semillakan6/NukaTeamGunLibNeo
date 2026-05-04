@@ -77,6 +77,11 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
     protected boolean isEquiping;
     protected ItemStack itemCache = ItemStack.EMPTY;
     protected ThrowMode throwMode;
+
+    /** Cycled chamber/barrel anim already started for this shooting window (avoids re-seeding every render frame). */
+    private String lockedCycledAnim = "";
+    /** Reload phase on the main controller; avoids restarting LOOP reload clips every frame. */
+    private String mainReloadAnimKey = "";
     protected int prepareTime;
     protected int throwingTime;
     private WeaponData data;
@@ -176,6 +181,8 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
         return event -> {
             if(itemCache != getStack()) {
                 itemCache = getStack();
+                lockedCycledAnim = "";
+                mainReloadAnimKey = "";
                 return event.setAndContinue(playVoid());
             }
             try {
@@ -189,6 +196,10 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
                 var isShooting = shootingHandler.isShooting(shooter, arm);
                 var data = shootingHandler.getShootingData(arm);
                 var animation = begin();
+
+                if (!reloadHandler.isReloading(shooter, arm)) {
+                    mainReloadAnimKey = "";
+                }
 
                 if(ClientEquipHandler.get().isEquiping(arm)) {
                     animation = getEquipAnimation(event);
@@ -210,6 +221,14 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
                     animation = getChargingAnimation(event, data);
                 }
                 else if (reloadHandler.isReloading(shooter, arm)) {
+                    var start = ModSyncedDataKeys.RELOAD_START.getValue(shooter);
+                    var end = ModSyncedDataKeys.RELOAD_END.getValue(shooter);
+                    var reloadKey = start ? "start" : end ? "end" : "main";
+                    if (reloadKey.equals(mainReloadAnimKey)) {
+                        applyReloadAnimationSpeed(event);
+                        return PlayState.CONTINUE;
+                    }
+                    mainReloadAnimKey = reloadKey;
                     animation = getReloadingAnimation(event);
                 }
                 else if (isShooting) {
@@ -292,18 +311,41 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
 
         if (TransformUtils.isHandTransform(this.transformType) && cycler != null) {
             var entity = this.getEntity();
-            var isShooting = shootingHandler.isShooting(entity, TransformUtils.getHand(this.transformType));
+            var hand = TransformUtils.getHand(this.transformType);
+            var isShooting = shootingHandler.isShooting(entity, hand);
             var finalAnim = animationName + cycler.getCurrent();
 
-            RawAnimation animation = null;
-            if (isShooting && this.animationHelper.hasAnimation(finalAnim)) {
-                animation = RawAnimation.begin().then(finalAnim, LoopType.HOLD_ON_LAST_FRAME);
-                this.animationHelper.syncAnimation(event, rate, finalAnim);
+            if (!isShooting) {
+                lockedCycledAnim = "";
+                return event.setAndContinue(null);
             }
 
+            if (!this.animationHelper.hasAnimation(finalAnim)) {
+                return event.setAndContinue(null);
+            }
+
+            if (finalAnim.equals(lockedCycledAnim)) {
+                this.animationHelper.syncAnimation(event, rate, finalAnim);
+                return PlayState.CONTINUE;
+            }
+
+            lockedCycledAnim = finalAnim;
+            var animation = RawAnimation.begin().then(finalAnim, LoopType.HOLD_ON_LAST_FRAME);
+            this.animationHelper.syncAnimation(event, rate, finalAnim);
             return event.setAndContinue(animation);
         }
         return PlayState.STOP;
+    }
+
+    /** Keeps reload clip speed in sync when we {@link PlayState#CONTINUE} the main controller reload. */
+    private void applyReloadAnimationSpeed(AnimationState<WeaponAnimator> event) {
+        if (ModSyncedDataKeys.RELOAD_START.getValue(getEntity())) {
+            animationHelper.syncAnimation(event, reloadStartTime, Animations.RELOAD_START);
+        } else if (ModSyncedDataKeys.RELOAD_END.getValue(getEntity())) {
+            animationHelper.syncAnimation(event, reloadEndTime, Animations.RELOAD_END);
+        } else {
+            animationHelper.syncAnimation(event, reloadTime, RELOAD);
+        }
     }
 
     protected RawAnimation getHoldAnimation(AnimationState<WeaponAnimator> event) {
@@ -484,6 +526,7 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
         if (cooldown == rate) {
             barrelCycler.cycle();
             chamberCycler.cycle();
+            lockedCycledAnim = "";
         }
     }
 }
