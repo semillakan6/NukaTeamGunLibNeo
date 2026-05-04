@@ -2,6 +2,7 @@ package com.nukateam.ntgl.client.util.handler;
 
 import com.mojang.datafixers.util.Pair;
 import com.nukateam.ntgl.Ntgl;
+import com.nukateam.ntgl.client.util.helpers.PlayerAnimations;
 import com.nukateam.ntgl.common.data.WeaponData;
 import com.nukateam.ntgl.common.data.holders.WeaponAction;
 import com.nukateam.ntgl.common.data.holders.MeleeMode;
@@ -11,6 +12,7 @@ import com.nukateam.ntgl.common.network.PacketHandler;
 import com.nukateam.ntgl.common.network.message.weapon.C2SMessageMeleeAttack;
 import com.nukateam.ntgl.common.util.util.WeaponModifierHelper;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.*;
 import net.neoforged.api.distmarker.Dist;
@@ -65,6 +67,11 @@ public class ClientMeleeHandler {
         {
             TRACKER_MAP.put(Pair.of(entity, hand), new ClientMeleeTracker(data));
             PacketHandler.getPlayChannel().sendToServer(new C2SMessageMeleeAttack(hand, data.weaponMode));
+            // Play the player-model animation immediately on the local client so the ntgl slow
+            // animation takes priority over any fast external swing (e.g. Better Combat).
+            if (entity instanceof AbstractClientPlayer clientPlayer) {
+                PlayerAnimations.playMeleeAnimation(clientPlayer, hand);
+            }
         }
     }
 

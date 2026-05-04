@@ -887,7 +887,14 @@
 			}
 		},
 		"void": {
-			"loop": true
+			"loop": true,
+			"bones": {
+				"muzzle_flash": {
+					"scale": {
+						"vector": [0, 0, 0]
+					}
+				}
+			}
 		}
 	},
 	"azurelib_format_version": 2

@@ -34,8 +34,8 @@
   "melee": {
     "mode": "ntgl:single",
     "damage": 15,
-    "delay": 8,
-    "cooldown": 10,
+    "delay": 24,
+    "cooldown": 18,
     "distance": 4,
     "angle": 50,
     "maxTargets": 5,

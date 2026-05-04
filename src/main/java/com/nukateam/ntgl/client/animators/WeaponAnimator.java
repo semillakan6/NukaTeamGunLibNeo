@@ -277,19 +277,18 @@ public class WeaponAnimator extends ItemAnimator implements IConfigProvider<Weap
                     animation = getInspectionAnimation(event);
                 }
                 else {
-                    if (currentGun == getWeapon()) {
-                        var holdKey = resolvePlayedGunAnimName(HOLD);
-                        if (!holdKey.isEmpty() && holdKey.equals(lockedHoldAnimKey)) {
-                            return PlayState.CONTINUE;
-                        }
-                        lockedHoldAnimKey = holdKey;
-                        animation = getHoldAnimation(event);
-                    } else {
-                        lockedHoldAnimKey = "";
+                    // Sync weapon identity without forcing SHOT (LOOP): that left third-person (and any stale state)
+                    // stuck on the looping shot clip with muzzle_flash visible while idle.
+                    if (currentGun != getWeapon()) {
                         currentGun = getWeapon();
-                        animation = playGunAnim(SHOT, LOOP);
+                        lockedHoldAnimKey = "";
                     }
-//                    Ntgl.LOGGER.debug("! Hold");
+                    var holdKey = resolvePlayedGunAnimName(HOLD);
+                    if (!holdKey.isEmpty() && holdKey.equals(lockedHoldAnimKey)) {
+                        return PlayState.CONTINUE;
+                    }
+                    lockedHoldAnimKey = holdKey;
+                    animation = getHoldAnimation(event);
                 }
 
                 return animation != null ? event.setAndContinue(animation): PlayState.STOP;

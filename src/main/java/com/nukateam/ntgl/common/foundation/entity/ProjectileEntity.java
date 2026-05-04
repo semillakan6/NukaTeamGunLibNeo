@@ -127,9 +127,9 @@ public class ProjectileEntity extends Entity{
     @Override
     protected void addAdditionalSaveData(CompoundTag compound) {
         var provider = getProvider();
-        compound.put("Weapon", weapon.save(provider, new CompoundTag()));
+        compound.put("Weapon", weapon.isEmpty() ? new CompoundTag() : weapon.save(provider, new CompoundTag()));
         compound.putString("WeaponAction", weaponAction.toString());
-        compound.put("Ammo", ammo.save(provider, new CompoundTag()));
+        compound.put("Ammo", ammo.isEmpty() ? new CompoundTag() : ammo.save(provider, new CompoundTag()));
         compound.putString("AmmoHolder", ammoHolder.toString());
         compound.put("Projectile", this.projectile.serializeNBT(provider));
         compound.put("General", this.general.serializeNBT(provider));

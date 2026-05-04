@@ -99,6 +99,9 @@ repositories {
     }
 }
 
+// Pass -PnoOptionalCompat=true to runClient/runServer without Controllable, Better Combat, and Cloth (dev-only optional integrations).
+def noOptionalCompatRuntime = project.hasProperty('noOptionalCompat') && project.property('noOptionalCompat').toString().equalsIgnoreCase('true')
+
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
 
@@ -117,7 +120,9 @@ dependencies {
     implementation "maven.modrinth:subtle-effects:bTFc0rVM"
 
     compileOnly 'curse.maven:controllable-317269:6850105'
-    localRuntime 'curse.maven:controllable-317269:6850105'
+    if (!noOptionalCompatRuntime) {
+        localRuntime 'curse.maven:controllable-317269:6850105'
+    }
     implementation "dev.kosmx.player-anim:player-animation-lib-forge:2.0.1+1.21.1"
 
     compileOnly 'curse.maven:backpacked-352835:7573687'
@@ -126,12 +131,26 @@ dependencies {
     compileOnly "mezz.jei:jei-1.21.1-common-api:19.25.0.322"
     compileOnly "mezz.jei:jei-1.21.1-neoforge-api:19.25.0.322"
 
-    // Better Combat (optional at runtime for players): needed on classpath for dev client — loader still validates the mods.toml dep range.
+    // Better Combat (optional at runtime for players): compileOnly always; localRuntime unless -PnoOptionalCompat=true
     compileOnly "maven.modrinth:better-combat:2NyTus6V"
-    localRuntime "maven.modrinth:better-combat:2NyTus6V"
-    // Cloth Config — Better Combat requires it; not pulled transitively into localRuntime from the Modrinth jar.
-    localRuntime "maven.modrinth:cloth-config:izKINKFg"
+    if (!noOptionalCompatRuntime) {
+        localRuntime "maven.modrinth:better-combat:2NyTus6V"
+        // Cloth Config — Better Combat requires it; not pulled transitively into localRuntime from the Modrinth jar.
+        localRuntime "maven.modrinth:cloth-config:izKINKFg"
+    }
     localRuntime "mezz.jei:jei-1.21.1-neoforge:19.25.0.322"
+
+    // Dev-only Create Gunsmithing Neo: sibling checkout by default; override with -PcreateGunsmithingNeoJar=C:/path/to/your.jar
+    def createGunsmithingNeoJarProp = project.findProperty('createGunsmithingNeoJar')?.toString()?.trim()
+    def createGunsmithingJarFile = createGunsmithingNeoJarProp ? file(createGunsmithingNeoJarProp) : file("${rootProject.projectDir}/../CreateGunsmithingNeo/build/libs/create-gunsmithing-1.4.2.1_Neo.jar")
+    if (createGunsmithingJarFile.exists()) {
+        localRuntime files(createGunsmithingJarFile)
+    } else {
+        logger.lifecycle("Create Gunsmithing jar not found (sibling ../CreateGunsmithingNeo/build/libs/ or -PcreateGunsmithingNeoJar=...); skipping localRuntime.")
+    }
+
+    // Create — mandatory for Create Gunsmithing (cgs). NeoForge 1.21.1, matches [6.0.10,) from cgs mods.toml.
+    localRuntime "maven.modrinth:create:UjX6dr61"
 
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 }
