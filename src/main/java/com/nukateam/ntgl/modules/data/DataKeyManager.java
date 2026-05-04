@@ -27,9 +27,9 @@ public class DataKeyManager {
         dataKeys.put(id++, dataKey);
     }
 
-    public void setData(Boolean data, int dataKeyId, int entityId){
-        if(dataKeys.containsKey(dataKeyId)) {
-            dataKeys.get(dataKeyId).setValue(entityId, data);
+    public void setData(Boolean data, int dataKeyId, int entityId) {
+        if (dataKeys.containsKey(dataKeyId)) {
+            dataKeys.get(dataKeyId).setSyncedClientValue(entityId, data);
         }
     }
 
@@ -38,7 +38,7 @@ public class DataKeyManager {
         var entries = new HashMap<DataEntry, S2CMessageUpdateEntityData.EntityData>();
 
         DataKeyManager.getInstance().dataKeys.forEach((dataKeyId, dataKey) -> {
-            dataKey.getData().forEach((entityId, dataEntry) -> {
+            dataKey.getServerData().forEach((entityId, dataEntry) -> {
                 if (dataEntry.isPendingSync()) {
                     dataEntry.setPendingSync(false);
                     entries.put(dataEntry, new S2CMessageUpdateEntityData.EntityData(entityId, dataKeyId));
@@ -47,7 +47,7 @@ public class DataKeyManager {
         });
 
         if (!entries.isEmpty()) {
-            PacketHandler.getPlayChannel().sendToAll(new S2CMessageUpdateEntityData());
+            PacketHandler.getPlayChannel().sendToAll(new S2CMessageUpdateEntityData(entries));
         }
     }
 }

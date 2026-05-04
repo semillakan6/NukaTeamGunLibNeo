@@ -43,9 +43,7 @@ public class ClientReloadHandler {
 
     @SubscribeEvent
     public void onClientTick(ClientTickEvent.Post event) {
-        if(reloadTicks > 0) reloadTicks--;
-
-        if(reloadTicks > 0) reloadTicks--;
+        if (reloadTicks > 0) reloadTicks--;
 
         var player = Minecraft.getInstance().player;
         if (player != null) {

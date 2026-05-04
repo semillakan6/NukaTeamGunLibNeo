@@ -124,7 +124,7 @@ public class TwoHandedPose extends WeaponPose {
 
     @Override
     public void applyGeoModelRotation(LivingEntity entity, GeoBone rightArm, GeoBone leftArm, GeoBone head, InteractionHand interactionHand) {
-        var aimProgress = AimingHandler.get().getAimProgress(entity, Minecraft.getInstance().getTimer().getRealtimeDeltaTicks());
+        var aimProgress = AimingHandler.get().getAimProgress(entity, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
         var mainIsRightArm = entity.getMainArm() == HumanoidArm.RIGHT;
 
         rightArm.setRotX((float)Math.toRadians(head.getRotX()));
@@ -174,7 +174,7 @@ public class TwoHandedPose extends WeaponPose {
 //        poseStack.translate(X * 0.0625 , Y * 0.0625, Z * 0.0625);
         poseStack.translate(-9 * 0.0625 , -13 * 0.0625, -25 * 0.0625);
 
-        var aim = AimingHandler.get().getAimProgress(entity, Minecraft.getInstance().getTimer().getRealtimeDeltaTicks());
+        var aim = AimingHandler.get().getAimProgress(entity, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
         poseStack.translate(ClientDebug.X * 0.0625 * aim, ClientDebug.Y * 0.0625 * aim, ClientDebug.Z * 0.0625 * aim);
         poseStack.translate(-1 * 0.0625 * aim , 3 * 0.0625 * aim, 0);
     }

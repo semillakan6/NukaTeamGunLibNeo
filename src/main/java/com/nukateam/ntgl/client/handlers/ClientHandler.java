@@ -1,9 +1,16 @@
 package com.nukateam.ntgl.client.handlers;
 
-import com.nukateam.ntgl.client.compat.BetterCombatClientHooks;
+import com.nukateam.ntgl.client.compat.OptionalClientIntegrations;
 import com.nukateam.ntgl.client.registry.*;
-import com.nukateam.ntgl.client.util.handler.*;
-import com.nukateam.ntgl.client.input.GunButtonBindings;
+import com.nukateam.ntgl.client.util.handler.AimingHandler;
+import com.nukateam.ntgl.client.util.handler.ClientEquipHandler;
+import com.nukateam.ntgl.client.util.handler.ClientReloadHandler;
+import com.nukateam.ntgl.client.util.handler.ClientShootingHandler;
+import com.nukateam.ntgl.client.util.handler.CrosshairHandler;
+import com.nukateam.ntgl.client.util.handler.EntityModelHandler;
+import com.nukateam.ntgl.client.util.handler.GunRenderingHandler;
+import com.nukateam.ntgl.client.util.handler.RecoilHandler;
+import com.nukateam.ntgl.client.util.handler.SoundHandler;
 import com.nukateam.ntgl.client.render.screen.AttachmentScreen;
 import com.nukateam.ntgl.client.render.screen.WorkbenchScreen;
 import com.nukateam.ntgl.common.foundation.init.ModContainers;
@@ -38,16 +45,7 @@ public class ClientHandler {
         NeoForge.EVENT_BUS.register(SoundHandler.get());
         NeoForge.EVENT_BUS.register(new EntityModelHandler());
 
-        /* Only register controller events if Controllable is loaded otherwise it will crash */
-        if (Ntgl.controllableLoaded) {
-//            ControllerHandler.init();
-            NeoForge.EVENT_BUS.register(new ControllerHandler());
-            GunButtonBindings.register();
-        }
-
-        if (Ntgl.betterCombatLoaded) {
-            BetterCombatClientHooks.register();
-        }
+        OptionalClientIntegrations.register();
 
 //        setupRenderLayers();
         AnimationRegistry.register();

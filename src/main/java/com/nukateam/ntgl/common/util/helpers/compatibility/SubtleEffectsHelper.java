@@ -29,7 +29,10 @@ public class SubtleEffectsHelper {
     }
 
     public static boolean doSplashEffect(Vec3 pos, float size, float speed, boolean isInLava) {
-        var level = Minecraft.getInstance().level;
+        var mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return false;
+        }
         var fluidId = isInLava ? LAVA_FLUID_DEF : WATER_FLUID_DEF;
 
         var ratio = isInLava ? 2f : 1f;
@@ -38,7 +41,7 @@ public class SubtleEffectsHelper {
             return false;
         }
         var splashEmitter = new SplashEmitterParticleOptions(fluidId, size, size * speed / ratio, -1.0F, -1);
-        level.addAlwaysVisibleParticle(splashEmitter, true,
+        mc.level.addAlwaysVisibleParticle(splashEmitter, true,
                 pos.x(), pos.y() + 0.01, pos.z(),
                 0.0F, 0.0F, 0.0F);
         return true;

@@ -328,7 +328,6 @@ public class ReloadTracker {
         if(tracker != null){
             var data = tracker.data;
             reloadSecondHand(data, hand);
-            NeoForge.EVENT_BUS.post(new GunReloadEvent.Post(data, hand));
             RELOAD_TRACKER_MAP.remove(wielder);
 //            DelayedTask.runAfter(4, () -> gun.playCockSound(wielder));
         }
@@ -349,15 +348,25 @@ public class ReloadTracker {
         return false;
     }
 
+    /** Chain off-hand reload after main-hand completes (must use off-hand {@link WeaponData} for {@link #startReloading}). */
     private static void reloadSecondHand(WeaponData data, InteractionHand hand) {
         var wielder = data.wielder;
-        var oppositeHand = LivingEntityUtils.getOppositeHand(hand);
-        var oppositeStack = wielder.getItemInHand(oppositeHand);
 
         if (hand == InteractionHand.MAIN_HAND
-                && oppositeStack.getItem() instanceof IWeapon
-                && !WeaponStateHelper.isWeaponFull(data)) {
-            startReloading(data, InteractionHand.OFF_HAND);
+                && wielder instanceof Player player
+                && WeaponModifierHelper.canUseOffhandWeapon(player)
+                && !ModSyncedDataKeys.RELOADING_LEFT.getValue(wielder)) {
+            var oppositeStack = wielder.getItemInHand(InteractionHand.OFF_HAND);
+            if (oppositeStack.getItem() instanceof IWeapon) {
+                var offData = new WeaponData(oppositeStack, wielder).setWeaponMode(data.weaponMode);
+                var isAmmoIgnored = WeaponStateHelper.isAmmoIgnored(offData);
+                var hasAmmo = InventoryUtil.hasAmmo(offData);
+                var isMaxAmmo = WeaponStateHelper.isMaxAmmo(offData);
+
+                if (!isAmmoIgnored && hasAmmo && !isMaxAmmo) {
+                    startReloading(offData, InteractionHand.OFF_HAND);
+                }
+            }
         }
 
         NeoForge.EVENT_BUS.post(new GunReloadEvent.Post(data, hand));

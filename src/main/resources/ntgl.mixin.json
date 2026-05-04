@@ -13,7 +13,7 @@
     "chassis.common.PlayerMixin"
   ],
   "client": [
-    "ntgl.client.AgeableListModelMixin",
+    "ntgl.client.HumanoidModelWeaponPoseMixin",
     "ntgl.client.AgeableListModelAccessor",
     "ntgl.client.GameRendererMixin",
     "ntgl.client.GeoEntityRendererMixin",

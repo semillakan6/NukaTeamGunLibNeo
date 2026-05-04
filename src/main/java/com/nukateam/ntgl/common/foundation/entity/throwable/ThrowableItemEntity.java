@@ -6,6 +6,7 @@ import com.nukateam.ntgl.common.foundation.item.interfaces.IWeapon;
 import com.nukateam.ntgl.common.util.util.StackUtils;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -26,7 +27,12 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 
 public abstract class ThrowableItemEntity<T extends Item & IWeapon & IThrowable> extends ThrowableProjectile{
-    protected ProjectileConfig projectile;
+    /**
+     * Client entities are constructed with the {@link EntityType} factory (no item constructor), and spawn
+     * packets do not run {@link #readAdditionalSaveData} before the first tick. A non-null default avoids NPEs
+     * in {@link #isNoGravity()} and keeps throwables falling until real config is loaded from disk.
+     */
+    protected ProjectileConfig projectile = defaultThrowableProjectileConfig();
     private ItemStack item = ItemStack.EMPTY;
     private boolean shouldBounce;
     private float gravityVelocity = 0.03F;
@@ -42,19 +48,28 @@ public abstract class ThrowableItemEntity<T extends Item & IWeapon & IThrowable>
 
     public ThrowableItemEntity(EntityType<? extends ThrowableItemEntity> entityType, Level world, LivingEntity thrower, T item) {
         super(entityType, thrower, world);
-        this.projectile = item.getConfig().getThrowable().getProjectile();
+        var fromItem = item.getConfig().getThrowable().getProjectile();
+        this.projectile = fromItem != null ? fromItem : defaultThrowableProjectileConfig();
         this.setItem(new ItemStack(item));
+    }
+
+    private static ProjectileConfig defaultThrowableProjectileConfig() {
+        return ProjectileConfig.Builder.create()
+                .setProjectileAffectedByGravity(true)
+                .build();
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag compound) {
         var provider = this.level().registryAccess();
-        var stackTag = new CompoundTag();
-        this.item.save(provider, stackTag);
         compound.put("Projectile", this.projectile.serializeNBT(provider));
         compound.putBoolean("shouldBounce", shouldBounce);
         compound.putFloat("gravityVelocity", gravityVelocity);
-        compound.put("item", stackTag);
+        if (!this.item.isEmpty()) {
+            var stackTag = new CompoundTag();
+            this.item.save(provider, stackTag);
+            compound.put("item", stackTag);
+        }
     }
 
     @Override
@@ -63,7 +78,9 @@ public abstract class ThrowableItemEntity<T extends Item & IWeapon & IThrowable>
         this.projectile = ProjectileConfig.create(compound.getCompound("Projectile"));
         this.shouldBounce = compound.getBoolean("shouldBounce");
         this.gravityVelocity = compound.getFloat("gravityVelocity");
-        this.item = ItemStack.parseOptional(provider, compound.getCompound("item"));
+        this.item = compound.contains("item", Tag.TAG_COMPOUND)
+                ? ItemStack.parseOptional(provider, compound.getCompound("item"))
+                : ItemStack.EMPTY;
     }
 
     @Override
@@ -141,7 +158,7 @@ public abstract class ThrowableItemEntity<T extends Item & IWeapon & IThrowable>
 
     @Override
     public boolean isNoGravity() {
-        return !projectile.isGravity();
+        return projectile != null && !projectile.isGravity();
     }
 
 

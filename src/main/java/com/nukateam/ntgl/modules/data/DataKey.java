@@ -1,19 +1,29 @@
 package com.nukateam.ntgl.modules.data;
 
 import net.minecraft.world.entity.LivingEntity;
+
 import java.util.HashMap;
 
+/**
+ * Holds synced booleans separately for logical server vs logical client storage so integrated-server + optimistic
+ * client updates cannot cross-contaminate (shared JVM previously merged pendingSync into {@link DataKeyManager} broadcasts).
+ */
 public class DataKey {
-    private final HashMap<Integer, DataEntry> data = new HashMap<>();
+    private final HashMap<Integer, DataEntry> serverData = new HashMap<>();
+    private final HashMap<Integer, DataEntry> clientData = new HashMap<>();
 
-    private boolean defaultValue;
+    private final boolean defaultValue;
 
-    public DataKey(boolean defaultValue){
+    public DataKey(boolean defaultValue) {
         this.defaultValue = defaultValue;
     }
 
-    public boolean getValue(LivingEntity entity){
-        var entry = data.get(entity.getId());
+    private HashMap<Integer, DataEntry> mapFor(LivingEntity entity) {
+        return entity.level().isClientSide() ? clientData : serverData;
+    }
+
+    public boolean getValue(LivingEntity entity) {
+        var entry = mapFor(entity).get(entity.getId());
         if (entry != null) {
             return entry.getValue();
         }
@@ -21,21 +31,26 @@ public class DataKey {
     }
 
     public void setValue(LivingEntity entity, boolean value) {
-        setValue(entity.getId(), value);
+        put(mapFor(entity), entity.getId(), value);
     }
 
-    public void setValue(int id, boolean value) {
-        if(data.containsKey(id)){
-            data.get(id).setValue(value);
-        }
-        else {
+    /** Apply values from {@link com.nukateam.ntgl.modules.data.message.S2CMessageUpdateEntityData} on the physical client only. */
+    public void setSyncedClientValue(int entityId, boolean value) {
+        put(clientData, entityId, value);
+    }
+
+    private void put(HashMap<Integer, DataEntry> map, int id, boolean value) {
+        if (map.containsKey(id)) {
+            map.get(id).setValue(value);
+        } else {
             var dataEntry = new DataEntry();
             dataEntry.setValue(value);
-            data.put(id, dataEntry);
+            map.put(id, dataEntry);
         }
     }
 
-    public HashMap<Integer, DataEntry> getData() {
-        return data;
+    /** Pending outbound sync entries (logical server only). */
+    public HashMap<Integer, DataEntry> getServerData() {
+        return serverData;
     }
 }

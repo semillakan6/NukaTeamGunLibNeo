@@ -23,6 +23,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.ThrowableProjectile;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.player.Player;
@@ -131,7 +132,13 @@ public class ProjectileExplosion extends Explosion {
                 finalDamage *= 1.0D - strength;
             }
 
-            entity.hurt(this.damageSource, finalDamage);
+            var indirect = this.exploder instanceof ThrowableProjectile throwable ? throwable.getOwner() : null;
+            var hurtSource = this.damageSource != null
+                    ? this.damageSource
+                    : (this.exploder != null ? this.exploder.damageSources().explosion(this.exploder, indirect) : null);
+            if (hurtSource != null) {
+                entity.hurt(hurtSource, finalDamage);
+            }
 
 //            if (entity instanceof LivingEntity)
 //                knockback = ProtectionEnchantment.getExplosionKnockbackAfterDampener((LivingEntity) entity, knockback);

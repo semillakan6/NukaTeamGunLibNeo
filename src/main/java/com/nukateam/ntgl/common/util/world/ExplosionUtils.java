@@ -7,7 +7,9 @@ import com.nukateam.ntgl.common.network.PacketHandler;
 import com.nukateam.ntgl.common.network.message.weapon.S2CMessageProjectileExplosion;
 import com.nukateam.ntgl.common.util.interfaces.IExplosionDamageable;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.ThrowableProjectile;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
@@ -24,9 +26,14 @@ public class ExplosionUtils {
 
         entity.setPos(hitPos);
 
-        var source = entity instanceof ProjectileEntity projectileEntity ?
-                entity.damageSources().explosion(entity, projectileEntity.getShooter()) :
-                null;
+        DamageSource source;
+        if (entity instanceof ProjectileEntity projectileEntity) {
+            source = entity.damageSources().explosion(entity, projectileEntity.getShooter());
+        } else {
+            // Throwable grenades and other non-ProjectileEntity exploders: use thrower when available.
+            var indirect = entity instanceof ThrowableProjectile throwable ? throwable.getOwner() : null;
+            source = entity.damageSources().explosion(entity, indirect);
+        }
 
         var mode = config.isDestroyBlocks() && Config.COMMON.gameplay.griefing.enableBlockRemovalOnExplosions.get() ?
                 Explosion.BlockInteraction.DESTROY :

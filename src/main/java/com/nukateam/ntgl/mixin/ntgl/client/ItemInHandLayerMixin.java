@@ -26,10 +26,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Author: MrCrayfish
  */
-@Mixin(ItemInHandLayer.class)
+@Mixin(value = ItemInHandLayer.class, priority = 100)
 public class ItemInHandLayerMixin {
     @SuppressWarnings("ConstantConditions")
-    @Inject(method = "renderArmWithItem", at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "renderArmWithItem", at = @At(value = "HEAD"), cancellable = true, order = 2100)
     private void renderArmWithItem(LivingEntity entity, ItemStack stack,
                                        ItemDisplayContext transformType, HumanoidArm arm,
                                        PoseStack poseStack, MultiBufferSource source, int light, CallbackInfo ci) {
@@ -67,9 +67,11 @@ public class ItemInHandLayerMixin {
             if (layer.getParentModel() instanceof HumanoidModel<?> humanoid) {
                 @SuppressWarnings("unchecked")
                 var model = (HumanoidModel<LivingEntity>) (Object) humanoid;
+                WeaponPoseApplier.bindPoseEntity(humanoid, entity);
                 WeaponPoseApplier.applyWeaponPose(model, entity);
             }
             layer.getParentModel().translateToHand(arm, poseStack);
+
             poseStack.mulPose(Axis.XP.rotationDegrees(-90F));
             poseStack.mulPose(Axis.YP.rotationDegrees(180F));
             GunRenderingHandler.get().applyWeaponScale(stack, poseStack);
